@@ -19,6 +19,7 @@ import (
 	"github.com/stellar/go/protocols/horizon/effects"
 	"github.com/stellar/go/protocols/horizon/operations"
 	"github.com/stellar/go/support/errors"
+	sc "github.com/stellar/go/clients/stellarcore"
 )
 
 // sendRequest builds the URL for the given horizon request and sends the url to a horizon server
@@ -356,6 +357,15 @@ func (c *Client) OperationDetail(id string) (ops operations.Operation, err error
 // See https://www.stellar.org/developers/horizon/reference/endpoints/transactions-create.html
 func (c *Client) SubmitTransactionXDR(transactionXdr string) (txSuccess hProtocol.TransactionSuccess,
 	err error) {
+	ctx := context.Background()
+	cl := sc.Client{
+		URL:  "https://horizon.stellar.org/",
+		HTTP: http.DefaultClient,
+	}
+	if err = cl.WaitForNetworkSync(ctx); err != nil {
+		return txSuccess, errors.Wrap(err, "network not synced")
+	}
+	
 	request := submitRequest{endpoint: "transactions", transactionXdr: transactionXdr}
 	err = c.sendRequest(request, &txSuccess)
 	return
